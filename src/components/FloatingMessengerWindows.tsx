@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { ChatMessage, ActiveChatWindow } from '../types';
 import {
   X,
   Lock,
@@ -23,6 +24,7 @@ import {
   Mic,
   MicOff,
   Volume2,
+  VolumeX,
   User,
   PhoneOff,
   Briefcase,
@@ -94,7 +96,9 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
     deleteNotification,
     playAppSound,
     isNotificationCenterOpen,
-    closeNotificationCenter
+    closeNotificationCenter,
+    isOfferSoundEnabled,
+    toggleOfferSound
   } = useData();
 
   // Full Screen Messenger State
@@ -371,15 +375,120 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
     }
   ];
 
+  // Rich per-conversation message thread histories for realistic marketplace communication
+  const initialThreadHistories: Record<string, ChatMessage[]> = {
+    'chat-tanvir-ahmed': [
+      {
+        id: 'msg-tanvir-1',
+        senderName: 'Tanvir Ahmed',
+        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'আসসালামু আলাইকুম! আপনার ওয়েব ডেভেলপমেন্ট প্রজেক্টের রিকোয়ারমেন্ট পেয়েছি।',
+        time: '১৫ মিনিট আগে'
+      },
+      {
+        id: 'msg-tanvir-2',
+        senderName: 'আমি',
+        isSelf: true,
+        text: 'ওয়ালাইকুম আসসালাম! লাইভ ডেমো লিংকটি কি শেয়ার করতে পারবেন?',
+        time: '১২ মিনিট আগে'
+      },
+      {
+        id: 'msg-tanvir-3',
+        senderName: 'Tanvir Ahmed',
+        senderAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'প্রজেক্টের সোর্স কোড ও লাইভ প্রিভিউ লিংক পাঠিয়েছি, চেক করে জানাবেন।',
+        time: '১০ মিনিট আগে'
+      }
+    ],
+    'chat-creative-pixels': [
+      {
+        id: 'msg-pixels-1',
+        senderName: 'Creative Pixels Agency',
+        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'UI/UX রিডিজাইনের ১ম ড্রাফট সম্পূর্ণ তৈরি হয়েছে।',
+        time: '১ ঘণ্টা আগে'
+      },
+      {
+        id: 'msg-pixels-2',
+        senderName: 'Creative Pixels Agency',
+        senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'Figma ডিজাইন ফাইল আপডেট করা হয়েছে, ক্লায়েন্ট রিভিশন রেডি।',
+        time: '৪৫ মিনিট আগে'
+      }
+    ],
+    'chat-piten-support': [
+      {
+        id: 'msg-support-1',
+        senderName: 'PiTen Marketplace Official',
+        senderAvatar: 'https://images.unsplash.com/photo-1556742049-0a67e557224f?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'স্বাগতম! আপনার অর্ডার ও একাউন্ট সিকিউরিটি সম্পূর্ণ এনক্রিপ্টেড।',
+        time: '৩ ঘণ্টা আগে'
+      },
+      {
+        id: 'msg-support-2',
+        senderName: 'PiTen Marketplace Official',
+        senderAvatar: 'https://images.unsplash.com/photo-1556742049-0a67e557224f?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'অর্ডার #PT-8942 এর এস্ক্রো পেমেন্ট ভেরিফিকেশন সফল হয়েছে।',
+        time: '২ ঘণ্টা আগে'
+      }
+    ],
+    'chat-shahinur-rahman': [
+      {
+        id: 'msg-shahinur-1',
+        senderName: 'Shahinur Rahman',
+        senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'পেমেন্ট গেটওয়ে এবং ডাটাবেস এপিআই ইন্টিগ্রেশন সম্পন্ন।',
+        time: '৩ ঘণ্টা আগে'
+      }
+    ],
+    'chat-zubair-hossain': [
+      {
+        id: 'msg-zubair-1',
+        senderName: 'Zubair Hossain',
+        senderAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'Android APK ও iOS টেস্টফ্লাইট বিল্ড ডাউনলোড লিংক পাঠানো হয়েছে।',
+        time: '৫ ঘণ্টা আগে'
+      }
+    ],
+    'chat-sadia-afrin': [
+      {
+        id: 'msg-sadia-1',
+        senderName: 'Sadia Afrin',
+        senderAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'অন-পেজ এসইও ও কিওয়ার্ড র‍্যাংকিং অডিট রিপোর্ট পাঠানো হয়েছে।',
+        time: '১ দিন আগে'
+      }
+    ],
+    'chat-mouson-art': [
+      {
+        id: 'msg-mouson-1',
+        senderName: 'Mouson Branding Studio',
+        senderAvatar: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=120&q=80',
+        isSelf: false,
+        text: 'লোগো ভেক্টর ফাইল ও ব্র্যান্ডিং কিট প্যাকেজ রেডি।',
+        time: '১ দিন আগে'
+      }
+    ]
+  };
+
   const currentActiveWin = activeChatWindows?.find(w => w.id === selectedConversationId) || (
     selectedConversationId ? {
       id: selectedConversationId,
       senderName: conversationList.find(c => c.id === selectedConversationId)?.name || 'মার্কেটপ্লেস সেলার',
       senderRole: conversationList.find(c => c.id === selectedConversationId)?.role || 'টপ রেটেড সেলার',
       senderAvatar: conversationList.find(c => c.id === selectedConversationId)?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
-      messages: [
+      messages: initialThreadHistories[selectedConversationId] || [
         {
-          id: 'msg-default-1',
+          id: `msg-${selectedConversationId}-1`,
           senderName: conversationList.find(c => c.id === selectedConversationId)?.name || 'সেলার',
           senderAvatar: conversationList.find(c => c.id === selectedConversationId)?.avatar,
           isSelf: false,
@@ -493,12 +602,17 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                   setActiveTopTab('messages');
                   if (isNotificationCenterOpen) closeNotificationCenter();
                 }}
-                className={`flex-1 flex justify-center items-center py-1 transition relative active:scale-95 cursor-pointer ${
+                className={`flex-1 flex justify-center items-center py-1.5 transition relative active:scale-95 cursor-pointer ${
                   activeTopTab === 'messages' ? 'text-[#1DB954]' : 'text-white hover:text-emerald-400'
                 }`}
                 title="মেসেঞ্জার ও ইনবক্স"
               >
                 <Mail className={`w-5 h-5 ${activeTopTab === 'messages' ? 'stroke-[2.5] text-[#1DB954]' : 'text-white'}`} />
+                <span className="absolute -top-1 right-1.5 min-w-4 h-4 px-1 rounded-full bg-[#1DB954] text-white text-[9px] font-black flex items-center justify-center shadow-xs ring-1 ring-slate-900 leading-none">
+                  {conversationList.filter(c => c.unreadCount && c.unreadCount > 0).length > 0
+                    ? conversationList.reduce((acc, c) => acc + (c.unreadCount || 0), 0)
+                    : conversationList.length}
+                </span>
               </button>
               {/* 4. Notification */}
               <button
@@ -509,27 +623,39 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                   setActiveTopTab('notifications');
                   setSelectedConversationId(null);
                 }}
-                className={`flex-1 flex justify-center items-center py-1 transition relative active:scale-95 cursor-pointer ${
+                className={`flex-1 flex justify-center items-center py-1.5 transition relative active:scale-95 cursor-pointer ${
                   activeTopTab === 'notifications' ? 'text-[#1DB954]' : 'text-white hover:text-emerald-400'
                 }`}
                 title="নোটিফিকেশন সেন্টার"
               >
                 <Bell className={`w-5 h-5 ${activeTopTab === 'notifications' ? 'stroke-[2.5] text-[#1DB954]' : 'text-white'}`} />
-                {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute top-0 right-2 w-2 h-2 rounded-full bg-[#1DB954] ring-2 ring-[#0B132B]" />
+                {(notifications && notifications.length > 0) && (
+                  <span className="absolute -top-1 right-1.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs ring-1 ring-slate-900 leading-none">
+                    {notifications.filter(n => !n.read).length > 0
+                      ? notifications.filter(n => !n.read).length
+                      : notifications.length}
+                  </span>
                 )}
               </button>
-              {/* 5. Saved / Favorites */}
+              {/* 5. Sound Toggle (ON/OFF) */}
               <button
                 type="button"
-                onClick={() => {
-                  handleCloseAll();
-                  if (onNavigateTab) onNavigateTab('marketplace', 'saved_gigs');
-                }}
-                className="flex-1 flex justify-center items-center py-1 transition relative active:scale-95 cursor-pointer text-white"
-                title="পছন্দের সেভ করা গিগসমূহ"
+                onClick={toggleOfferSound}
+                className={`flex-1 flex justify-center items-center py-1.5 transition relative active:scale-95 cursor-pointer ${
+                  isOfferSoundEnabled ? 'text-[#1DB954]' : 'text-slate-400 hover:text-white'
+                }`}
+                title={isOfferSoundEnabled ? "সাউন্ড চালু (মিউট করতে ক্লিক করুন)" : "সাউন্ড বন্ধ (চালু করতে ক্লিক করুন)"}
               >
-                <Heart className="w-5 h-5 text-white" />
+                {isOfferSoundEnabled ? (
+                  <Volume2 className="w-5 h-5 text-[#1DB954] stroke-[2.5]" />
+                ) : (
+                  <VolumeX className="w-5 h-5 text-slate-400 hover:text-white" />
+                )}
+                <span className={`absolute -top-1 right-1 min-w-[20px] h-[15px] px-1 rounded-full text-white text-[8px] font-black flex items-center justify-center shadow-xs ring-1 ring-slate-900 leading-none ${
+                  isOfferSoundEnabled ? 'bg-[#1DB954]' : 'bg-slate-600 text-slate-200'
+                }`}>
+                  {isOfferSoundEnabled ? 'ON' : 'OFF'}
+                </span>
               </button>
             </div>
 
@@ -631,12 +757,9 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        handleCloseAll();
-                        if (onNavigateTab) onNavigateTab('home');
-                      }}
+                      onClick={handleCloseAll}
                       className="p-1 -ml-1 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                      title="হোমে ফিরে যান"
+                      title="ইনবক্স বন্ধ করে পেজে ফিরে যান"
                     >
                       <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
                     </button>
@@ -695,12 +818,9 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          handleCloseAll();
-                          if (onNavigateTab) onNavigateTab('home');
-                        }}
+                        onClick={handleCloseAll}
                         className="p-1 -ml-1 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                        title="হোমে ফিরে যান"
+                        title="বন্ধ করে পেজে ফিরে যান"
                       >
                         <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
                       </button>
@@ -747,12 +867,9 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        handleCloseAll();
-                        if (onNavigateTab) onNavigateTab('home');
-                      }}
+                      onClick={handleCloseAll}
                       className="p-1 -ml-1 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                      title="হোমে ফিরে যান"
+                      title="বন্ধ করে পেজে ফিরে যান"
                     >
                       <ChevronLeft className="w-5 h-5 text-slate-700 dark:text-slate-200" />
                     </button>
@@ -1315,7 +1432,13 @@ export const FloatingMessengerWindows: React.FC<FloatingMessengerWindowsProps> =
                                 }
 
                                 if (targetTab === 'financials' || selectedNotification.category === 'payout' || notifTitle.includes('ওয়ালেট') || notifTitle.includes('পেমেন্ট') || notifTitle.includes('বোনাস') || notifTitle.includes('ক্যাশআউট')) {
-                                  if (onNavigateTab) onNavigateTab('financials', undefined, true);
+                                  if (onNavigateTab) onNavigateTab('marketplace', 'seller-payout', true);
+                                  return;
+                                }
+
+                                const isSellerOrder = selectedNotification.category === 'seller' || notifTitle.includes('ক্লাইন্ট') || notifTitle.includes('ক্লায়েন্ট') || notifTitle.includes('প্রস্তাবনা') || notifTitle.includes('ord-8821') || notifTitle.includes('সেলিং');
+                                if (isSellerOrder) {
+                                  if (onNavigateTab) onNavigateTab('marketplace', 'seller-orders', true);
                                   return;
                                 }
 

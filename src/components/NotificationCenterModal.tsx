@@ -128,6 +128,7 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
       return;
     }
 
+    // Payout / Cashout Notifications -> Seller Payout Hub
     if (
       notif.targetTab === "financials" ||
       notif.category === "payout" ||
@@ -136,10 +137,25 @@ export const NotificationCenterModal: React.FC<NotificationCenterModalProps> = (
       notifTitle.includes("বোনাস") ||
       notifTitle.includes("ক্যাশআউট")
     ) {
-      if (onNavigateTab) onNavigateTab("financials", undefined, true);
+      if (onNavigateTab) onNavigateTab("marketplace", "seller-payout", true);
       return;
     }
 
+    // Seller Client Order or Proposal -> Seller Client Orders Hub
+    const isSellerOrder =
+      notif.category === "seller" ||
+      notifTitle.includes("ক্লাইন্ট") ||
+      notifTitle.includes("ক্লায়েন্ট") ||
+      notifTitle.includes("প্রস্তাবনা") ||
+      notifTitle.includes("ord-8821") ||
+      notifTitle.includes("সেলিং");
+
+    if (isSellerOrder) {
+      if (onNavigateTab) onNavigateTab("marketplace", "seller-orders", true);
+      return;
+    }
+
+    // Buyer Projects & Orders -> Buyer My Orders Hub
     if (
       notif.targetTab === "marketplace" ||
       notifTitle.includes("অর্ডার") ||

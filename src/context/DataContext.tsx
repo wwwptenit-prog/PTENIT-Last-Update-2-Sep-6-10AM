@@ -211,6 +211,8 @@ interface DataContextType {
   sendCentralNotification: (notif: Omit<NotificationItem, 'id' | 'time' | 'read'>) => void;
   
   // Shared Audio Synthesizer for Distinct Alerts
+  isOfferSoundEnabled: boolean;
+  toggleOfferSound: () => void;
   playAppSound: (type?: 'notification' | 'message' | 'order' | 'success') => void;
 
   // Mentorship Application & Role Actions
@@ -363,9 +365,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDarkModeState(prev => !prev);
   };
 
+  // Global Sound Toggle State (Synchronized across marketplace, floating messenger & notifications)
+  const [isOfferSoundEnabled, setIsOfferSoundEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('ptenit_offer_sound_enabled');
+      return saved !== null ? JSON.parse(saved) === true : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleOfferSound = () => {
+    setIsOfferSoundEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('ptenit_offer_sound_enabled', JSON.stringify(next));
+        localStorage.setItem('ptenit_toolkit_sound', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   // Shared Global Web Audio API Synthesizer for Distinct Alerts & Chimes
   const playAppSound = (type: 'notification' | 'message' | 'order' | 'success' = 'notification') => {
     try {
+      if (!isOfferSoundEnabled) return;
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtxClass) return;
       const ctx = new AudioCtxClass();
@@ -2856,6 +2880,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sendChatMessage,
         createGoogleMeetCall,
         toggleUserBlock,
+        isOfferSoundEnabled,
+        toggleOfferSound,
         playAppSound
       }}
     >
